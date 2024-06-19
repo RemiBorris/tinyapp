@@ -4,7 +4,6 @@ const PORT = 8080;
 
 const generateRandomString = function() {
   return Math.random().toString(36).slice(2, 8);
-  // const possibilities = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 };
 
 app.set("view engine", "ejs");
@@ -19,8 +18,12 @@ app.use(express.urlencoded({ extended: true }));
 app.post("/urls", (req, res) => {
   let newShortURL = generateRandomString();
   urlDatabase[newShortURL] = req.body.longURL;
-  let templateVars = { id: newShortURL, longURL: urlDatabase[newShortURL]};
   res.redirect(`/urls/${newShortURL}`); // Respond with 'Ok' (we will replace this)
+});
+
+app.post("/urls/9sm5xK/delete", (req, res) => {
+  delete urlDatabase[req.body.delete];
+  res.redirect("/urls");
 });
 
 app.get("/urls", (req, res) => {
