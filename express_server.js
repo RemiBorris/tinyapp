@@ -21,7 +21,7 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${newShortURL}`); // Respond with 'Ok' (we will replace this)
 });
 
-app.post("/urls/9sm5xK/delete", (req, res) => {
+app.post("/urls/:id/delete", (req, res) => {
   delete urlDatabase[req.body.delete];
   res.redirect("/urls");
 });
