@@ -26,6 +26,11 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
+app.post("/urls/:id/edit", (req, res) => {
+  urlDatabase[req.params.id] = req.body.edit;
+  res.redirect("/urls");
+});
+
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
