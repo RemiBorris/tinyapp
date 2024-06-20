@@ -31,6 +31,10 @@ app.post("/urls/:id/edit", (req, res) => {
   res.redirect("/urls");
 });
 
+app.post("/urls/:id", (req, res) =>{
+  res.redirect(`/urls/${req.params.id}`);
+});
+
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
