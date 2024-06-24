@@ -60,13 +60,17 @@ app.post("/urls/:id", (req, res) =>{
 });
 
 app.post("/login", (req, res) =>{
-  res.cookie('username',req.body.username);
+  const confirmRegistered = userLookup(req.body.email);
+  if (confirmRegistered === null || req.body.password !== confirmRegistered.password) {
+    res.status(403).end('Email not found in database or password does not match');
+  }
+  res.cookie('user_id', confirmRegistered.id);
   res.redirect("/urls");
 });
 
 app.post("/logout", (req, res) => {
   res.clearCookie('user_id');
-  res.redirect("/urls");
+  res.redirect("/login");
 });
 
 app.post("/register", (req, res) => {
