@@ -40,6 +40,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.post("/urls", (req, res) => {
+  if (!req.cookies['user_id']) {
+    res.send("You cannot modify URL's when not logged in");
+    return;
+  }
   let newShortURL = generateRandomString();
   urlDatabase[newShortURL] = req.body.longURL;
   res.redirect(`/urls/${newShortURL}`);
@@ -63,6 +67,7 @@ app.post("/login", (req, res) =>{
   const confirmRegistered = userLookup(req.body.email);
   if (confirmRegistered === null || req.body.password !== confirmRegistered.password) {
     res.status(403).end('Email not found in database or password does not match');
+    return;
   }
   res.cookie('user_id', confirmRegistered.id);
   res.redirect("/urls");
@@ -92,6 +97,10 @@ app.get("/login", (req, res) => {
   const templateVars = {
     user: users[req.cookies["user_id"]]
   };
+  if (req.cookies["user_id"]) {
+    res.redirect("/urls");
+    return;
+  }
   res.render("login", templateVars);
 });
 
@@ -107,6 +116,10 @@ app.get("/register", (req, res) => {
   const templateVars = {
     user: users[req.cookies["user_id"]]
   };
+  if (req.cookies["user_id"]) {
+    res.redirect("/urls");
+    return;
+  }
   res.render("register", templateVars);
 });
 
@@ -114,6 +127,10 @@ app.get("/urls/new", (req, res) => {
   const templateVars = {
     user: users[req.cookies["user_id"]]
   };
+  if (!req.cookies['user_id']) {
+    res.redirect("/login");
+    return;
+  }
   res.render("urls_new", templateVars);
 });
 
@@ -127,6 +144,10 @@ app.get("/urls/:id", (req, res) => {
 });
 
 app.get("/u/:id", (req, res) => {
+  if (!urlDatabase[req.params.id]) {
+    res.send("That URL is not in our database, please check and try again");
+    return;
+  }
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL);
 });
