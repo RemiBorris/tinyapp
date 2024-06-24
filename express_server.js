@@ -65,16 +65,15 @@ app.post("/login", (req, res) =>{
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect("/urls");
 });
 
 app.post("/register", (req, res) => {
   const newId = generateRandomString();
   const verifyNotAlreadyRegistered = userLookup(req.body.email);
-  console.log(verifyNotAlreadyRegistered);
   if (verifyNotAlreadyRegistered || !req.body.email || !req.body.password) {
-    res.status(400).end();
+    res.status(400).end('Email is already registered or fields are empty.');
   }
   users[newId] = {
     id: newId,
@@ -83,6 +82,13 @@ app.post("/register", (req, res) => {
   };
   res.cookie('user_id', newId);
   res.redirect("/urls");
+});
+
+app.get("/login", (req, res) => {
+  const templateVars = {
+    user: users[req.cookies["user_id"]]
+  };
+  res.render("login", templateVars);
 });
 
 app.get("/urls", (req, res) => {
@@ -94,7 +100,9 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  const templateVars = {};
+  const templateVars = {
+    user: users[req.cookies["user_id"]]
+  };
   res.render("register", templateVars);
 });
 
