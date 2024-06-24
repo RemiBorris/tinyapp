@@ -7,6 +7,15 @@ const generateRandomString = function() {
   return Math.random().toString(36).slice(2, 8);
 };
 
+const userLookup = function(email) {
+  for (const user in users) {
+    if (email === users[user].email) {
+      return users[user];
+    }
+  }
+  return null;
+};
+
 app.set("view engine", "ejs");
 
 const urlDatabase = {
@@ -33,7 +42,7 @@ app.use(cookieParser());
 app.post("/urls", (req, res) => {
   let newShortURL = generateRandomString();
   urlDatabase[newShortURL] = req.body.longURL;
-  res.redirect(`/urls/${newShortURL}`); // Respond with 'Ok' (we will replace this)
+  res.redirect(`/urls/${newShortURL}`);
 });
 
 app.post("/urls/:id/delete", (req, res) => {
@@ -62,6 +71,11 @@ app.post("/logout", (req, res) => {
 
 app.post("/register", (req, res) => {
   const newId = generateRandomString();
+  const verifyNotAlreadyRegistered = userLookup(req.body.email);
+  console.log(verifyNotAlreadyRegistered);
+  if (verifyNotAlreadyRegistered || !req.body.email || !req.body.password) {
+    res.status(400).end();
+  }
   users[newId] = {
     id: newId,
     email: req.body.email,
