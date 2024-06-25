@@ -16,21 +16,45 @@ const userLookup = function(email) {
   return null;
 };
 
+const urlsForUser = function(id) {
+  const userUrls = {};
+  for (const urlID in urlDatabase) {
+    if (urlDatabase[urlID].userID === id) {
+      userUrls[urlID] = urlDatabase[urlID].longURL;
+    }
+  }
+  return userUrls;
+};
+
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
+  b2xVn2: {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "A1B2C3",
+  },
+  "9sm5xK": {
+    longURL: "http://www.google.com",
+    userID: "A1B2C3",
+  },
 };
 
 const users = {
-  userRandomID: {
-    id: "userRandomID",
+  aJ48lW: {
+    id: "aJ48lW",
     email: "user@example.com",
     password: "purple-monkey-dinosaur",
   },
-  user2RandomID: {
-    id: "user2RandomID",
+  A1B2C3: {
+    id: "A1B2C3",
     email: "user2@example.com",
     password: "dishwasher-funk",
   },
@@ -41,25 +65,54 @@ app.use(cookieParser());
 
 app.post("/urls", (req, res) => {
   if (!req.cookies['user_id']) {
-    res.send("You cannot modify URL's when not logged in");
+    res.send("You cannot create URL's when not logged in", 401);
     return;
   }
   let newShortURL = generateRandomString();
-  urlDatabase[newShortURL] = req.body.longURL;
+  urlDatabase[newShortURL] = {
+    longURL: req.body.longURL,
+    userID: req.cookies['user_id'],
+  };
   res.redirect(`/urls/${newShortURL}`);
 });
 
 app.post("/urls/:id/delete", (req, res) => {
+  if (!req.cookies['user_id']) {
+    res.send("You cannot delete URL's when not logged in", 401);
+    return;
+  }
+  if (!urlDatabase[req.params.id]) {
+    res.send("That URL is not in our database, please check and try again", 404);
+    return;
+  }
+  const doesUserHaveURL = urlsForUser(req.cookies['user_id']);
+  if (!doesUserHaveURL[req.params.id]) {
+    res.send("URL can only be deleted by the original user", 403);
+    return;
+  }
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
 });
 
 app.post("/urls/:id/edit", (req, res) => {
+  if (!req.cookies['user_id']) {
+    res.send("You cannot modify URL's when not logged in", 401);
+    return;
+  }
+  if (!urlDatabase[req.params.id]) {
+    res.send("That URL is not in our database, please check and try again", 404);
+    return;
+  }
+  const doesUserHaveURL = urlsForUser(req.cookies['user_id']);
+  if (!doesUserHaveURL[req.params.id]) {
+    res.send("URL can only be modified by the original user", 403);
+    return;
+  }
   urlDatabase[req.params.id] = req.body.edit;
   res.redirect("/urls");
 });
 
-app.post("/urls/:id", (req, res) =>{
+app.post("/urls/:id", (req, res) => {
   res.redirect(`/urls/${req.params.id}`);
 });
 
@@ -83,6 +136,7 @@ app.post("/register", (req, res) => {
   const verifyNotAlreadyRegistered = userLookup(req.body.email);
   if (verifyNotAlreadyRegistered || !req.body.email || !req.body.password) {
     res.status(400).end('Email is already registered or fields are empty.');
+    return;
   }
   users[newId] = {
     id: newId,
@@ -105,8 +159,12 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
+  if (!req.cookies['user_id']) {
+    res.send("There are no URL's to show as no user is logged in, please login at try again", 401);
+    return;
+  }
   const templateVars = {
-    urls: urlDatabase,
+    urls: urlsForUser(req.cookies['user_id']),
     user: users[req.cookies["user_id"]]
   };
   res.render("urls_index", templateVars);
@@ -135,9 +193,18 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
+  if (!req.cookies['user_id']) {
+    res.send("There are no URL's to show as no user is logged in, please login at try again", 401);
+    return;
+  }
+  const doesUserHaveURL = urlsForUser(req.cookies['user_id']);
+  if (!doesUserHaveURL[req.params.id]) {
+    res.send("URL can only be modified by the original user", 403);
+    return;
+  }
   const templateVars = {
     id: req.params.id,
-    longURL: urlDatabase[req.params.id],
+    longURL: urlDatabase[req.params.id].longURL,
     user: users[req.cookies["user_id"]]
   };
   res.render("urls_show", templateVars);
@@ -145,10 +212,10 @@ app.get("/urls/:id", (req, res) => {
 
 app.get("/u/:id", (req, res) => {
   if (!urlDatabase[req.params.id]) {
-    res.send("That URL is not in our database, please check and try again");
+    res.send("That URL is not in our database, please check and try again", 404);
     return;
   }
-  const longURL = urlDatabase[req.params.id];
+  const longURL = urlDatabase[req.params.id].longURL;
   res.redirect(longURL);
 });
 
