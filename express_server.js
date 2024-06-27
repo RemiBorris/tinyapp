@@ -2,29 +2,7 @@ const express = require("express");
 const app = express();
 const PORT = 8080;
 const cookieParser = require('cookie-parser');
-
-const generateRandomString = function() {
-  return Math.random().toString(36).slice(2, 8);
-};
-
-const userLookup = function(email) {
-  for (const user in users) {
-    if (email === users[user].email) {
-      return users[user];
-    }
-  }
-  return null;
-};
-
-const urlsForUser = function(id) {
-  const userUrls = {};
-  for (const urlID in urlDatabase) {
-    if (urlDatabase[urlID].userID === id) {
-      userUrls[urlID] = urlDatabase[urlID].longURL;
-    }
-  }
-  return userUrls;
-};
+const {generateRandomString, userLookup, urlsForUser} = require("./helperFunctions");
 
 app.set("view engine", "ejs");
 
@@ -108,7 +86,7 @@ app.post("/urls/:id/edit", (req, res) => {
     res.send("URL can only be modified by the original user", 403);
     return;
   }
-  urlDatabase[req.params.id] = req.body.edit;
+  urlDatabase[req.params.id].longURL = req.body.edit;
   res.redirect("/urls");
 });
 
@@ -234,3 +212,5 @@ app.get("/hello", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
+
+module.exports = {users, urlDatabase};
