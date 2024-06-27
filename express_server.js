@@ -4,6 +4,8 @@ const PORT = 8080;
 const cookieSession = require('cookie-session');
 const bcrypt = require("bcryptjs");
 const { userLookup, generateRandomString, urlsForUser } = require("./helpers");
+const methodOverride = require('method-override');
+
 
 app.set("view engine", "ejs");
 
@@ -39,6 +41,7 @@ const users = {
   },
 };
 
+app.use(methodOverride('_method'));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieSession({
   name: 'session',
@@ -58,7 +61,7 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${newShortURL}`);
 });
 
-app.post("/urls/:id/delete", (req, res) => {
+app.delete("/urls/:id", (req, res) => {
   if (!req.session.user_id) {
     res.send("You cannot delete URL's when not logged in", 401);
     return;
@@ -76,7 +79,7 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
-app.post("/urls/:id", (req, res) => {
+app.put("/urls/:id", (req, res) => {
   if (!req.session.user_id) {
     res.send("You cannot modify URL's when not logged in", 401);
     return;
