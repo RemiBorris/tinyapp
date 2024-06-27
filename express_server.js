@@ -8,6 +8,7 @@ const generateRandomString = function() {
   return Math.random().toString(36).slice(2, 8);
 };
 
+// function verifies if user exists, if it does it returns the user details else returns null
 const userLookup = function(email) {
   for (const user in users) {
     if (email === users[user].email) {
@@ -17,6 +18,7 @@ const userLookup = function(email) {
   return null;
 };
 
+// function returns thr URL's which belong to the logged in user
 const urlsForUser = function(id) {
   const userUrls = {};
   for (const urlID in urlDatabase) {
@@ -119,7 +121,7 @@ app.post("/urls/:id", (req, res) => {
 
 app.post("/login", (req, res) =>{
   const confirmRegistered = userLookup(req.body.email);
-  if (confirmRegistered === null || !bcrypt.compareSync(req.body.password, confirmRegistered.password)) {
+  if (confirmRegistered === null || !bcrypt.compareSync(req.body.password, confirmRegistered.password)) { //verifies if hashed passwords match and user exists
     res.status(403).end('Email not found in database or password does not match');
     return;
   }
@@ -142,7 +144,7 @@ app.post("/register", (req, res) => {
   users[newId] = {
     id: newId,
     email: req.body.email,
-    password: bcrypt.hashSync(req.body.password, 10)
+    password: bcrypt.hashSync(req.body.password, 10) //hashes password so is not stored on server in plain text
   };
   res.cookie('user_id', newId);
   res.redirect("/urls");
