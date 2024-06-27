@@ -76,7 +76,7 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
-app.post("/urls/:id/edit", (req, res) => {
+app.post("/urls/:id", (req, res) => {
   if (!req.session.user_id) {
     res.send("You cannot modify URL's when not logged in", 401);
     return;
@@ -94,7 +94,7 @@ app.post("/urls/:id/edit", (req, res) => {
   res.redirect("/urls");
 });
 
-app.post("/urls/:id", (req, res) => {
+app.post("/urls/:id/edit", (req, res) => {
   res.redirect(`/urls/${req.params.id}`);
 });
 
@@ -179,6 +179,10 @@ app.get("/urls/:id", (req, res) => {
     res.send("There are no URL's to show as no user is logged in, please login at try again", 401);
     return;
   }
+  if (!urlDatabase[req.params.id]) {
+    res.send("That URL is not in our database, please check and try again", 404);
+    return;
+  }
   const doesUserHaveURL = urlsForUser(req.session.user_id, urlDatabase);
   if (!doesUserHaveURL[req.params.id]) {
     res.send("URL can only be modified by the original user", 403);
@@ -202,7 +206,11 @@ app.get("/u/:id", (req, res) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  if (req.session.user_id) {
+    return res.redirect("/urls");
+  } else {
+    return res.redirect("/login");
+  }
 });
 
 app.get("/urls.json", (req, res) => {
