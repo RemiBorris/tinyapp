@@ -2,7 +2,30 @@ const express = require("express");
 const app = express();
 const PORT = 8080;
 const cookieParser = require('cookie-parser');
-const {generateRandomString, userLookup, urlsForUser} = require("./helperFunctions");
+const bcrypt = require("bcryptjs");
+
+const generateRandomString = function() {
+  return Math.random().toString(36).slice(2, 8);
+};
+
+const userLookup = function(email) {
+  for (const user in users) {
+    if (email === users[user].email) {
+      return users[user];
+    }
+  }
+  return null;
+};
+
+const urlsForUser = function(id) {
+  const userUrls = {};
+  for (const urlID in urlDatabase) {
+    if (urlDatabase[urlID].userID === id) {
+      userUrls[urlID] = urlDatabase[urlID].longURL;
+    }
+  }
+  return userUrls;
+};
 
 app.set("view engine", "ejs");
 
@@ -96,7 +119,7 @@ app.post("/urls/:id", (req, res) => {
 
 app.post("/login", (req, res) =>{
   const confirmRegistered = userLookup(req.body.email);
-  if (confirmRegistered === null || req.body.password !== confirmRegistered.password) {
+  if (confirmRegistered === null || !bcrypt.compareSync(req.body.password, confirmRegistered.password)) {
     res.status(403).end('Email not found in database or password does not match');
     return;
   }
@@ -119,7 +142,7 @@ app.post("/register", (req, res) => {
   users[newId] = {
     id: newId,
     email: req.body.email,
-    password: req.body.password
+    password: bcrypt.hashSync(req.body.password, 10)
   };
   res.cookie('user_id', newId);
   res.redirect("/urls");
@@ -212,5 +235,3 @@ app.get("/hello", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-
-module.exports = {users, urlDatabase};
