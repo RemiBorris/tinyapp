@@ -3,32 +3,7 @@ const app = express();
 const PORT = 8080;
 const cookieSession = require('cookie-session');
 const bcrypt = require("bcryptjs");
-
-
-const generateRandomString = function() {
-  return Math.random().toString(36).slice(2, 8);
-};
-
-// function verifies if user exists, if it does it returns the user details else returns null
-const userLookup = function(email) {
-  for (const user in users) {
-    if (email === users[user].email) {
-      return users[user];
-    }
-  }
-  return null;
-};
-
-// function returns thr URL's which belong to the logged in user
-const urlsForUser = function(id) {
-  const userUrls = {};
-  for (const urlID in urlDatabase) {
-    if (urlDatabase[urlID].userID === id) {
-      userUrls[urlID] = urlDatabase[urlID].longURL;
-    }
-  }
-  return userUrls;
-};
+const { userLookup, generateRandomString, urlsForUser } = require("./helpers");
 
 app.set("view engine", "ejs");
 
@@ -92,7 +67,7 @@ app.post("/urls/:id/delete", (req, res) => {
     res.send("That URL is not in our database, please check and try again", 404);
     return;
   }
-  const doesUserHaveURL = urlsForUser(req.session.user_id);
+  const doesUserHaveURL = urlsForUser(req.session.user_id, urlDatabase);
   if (!doesUserHaveURL[req.params.id]) {
     res.send("URL can only be deleted by the original user", 403);
     return;
@@ -110,7 +85,7 @@ app.post("/urls/:id/edit", (req, res) => {
     res.send("That URL is not in our database, please check and try again", 404);
     return;
   }
-  const doesUserHaveURL = urlsForUser(req.session.user_id);
+  const doesUserHaveURL = urlsForUser(req.session.user_id, urlDatabase);
   if (!doesUserHaveURL[req.params.id]) {
     res.send("URL can only be modified by the original user", 403);
     return;
@@ -124,7 +99,7 @@ app.post("/urls/:id", (req, res) => {
 });
 
 app.post("/login", (req, res) =>{
-  const confirmRegistered = userLookup(req.body.email);
+  const confirmRegistered = userLookup(req.body.email, users);
   if (confirmRegistered === null || !bcrypt.compareSync(req.body.password, confirmRegistered.password)) { //verifies if hashed passwords match and user exists
     res.status(403).end('Email not found in database or password does not match');
     return;
@@ -140,7 +115,7 @@ app.post("/logout", (req, res) => {
 
 app.post("/register", (req, res) => {
   const newId = generateRandomString();
-  const verifyNotAlreadyRegistered = userLookup(req.body.email);
+  const verifyNotAlreadyRegistered = userLookup(req.body.email, users);
   if (verifyNotAlreadyRegistered || !req.body.email || !req.body.password) {
     res.status(400).end('Email is already registered or fields are empty.');
     return;
@@ -171,7 +146,7 @@ app.get("/urls", (req, res) => {
     return;
   }
   const templateVars = {
-    urls: urlsForUser(req.session.user_id),
+    urls: urlsForUser(req.session.user_id, urlDatabase),
     user: users[req.session.user_id]
   };
   res.render("urls_index", templateVars);
@@ -204,7 +179,7 @@ app.get("/urls/:id", (req, res) => {
     res.send("There are no URL's to show as no user is logged in, please login at try again", 401);
     return;
   }
-  const doesUserHaveURL = urlsForUser(req.session.user_id);
+  const doesUserHaveURL = urlsForUser(req.session.user_id, urlDatabase);
   if (!doesUserHaveURL[req.params.id]) {
     res.send("URL can only be modified by the original user", 403);
     return;
