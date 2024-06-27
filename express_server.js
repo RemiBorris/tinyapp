@@ -1,8 +1,9 @@
 const express = require("express");
 const app = express();
 const PORT = 8080;
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bcrypt = require("bcryptjs");
+
 
 const generateRandomString = function() {
   return Math.random().toString(36).slice(2, 8);
@@ -64,23 +65,26 @@ const users = {
 };
 
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2']
+}));
 
 app.post("/urls", (req, res) => {
-  if (!req.cookies['user_id']) {
+  if (!req.session.user_id) {
     res.send("You cannot create URL's when not logged in", 401);
     return;
   }
   let newShortURL = generateRandomString();
   urlDatabase[newShortURL] = {
     longURL: req.body.longURL,
-    userID: req.cookies['user_id'],
+    userID: req.session.user_id,
   };
   res.redirect(`/urls/${newShortURL}`);
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  if (!req.cookies['user_id']) {
+  if (!req.session.user_id) {
     res.send("You cannot delete URL's when not logged in", 401);
     return;
   }
@@ -88,7 +92,7 @@ app.post("/urls/:id/delete", (req, res) => {
     res.send("That URL is not in our database, please check and try again", 404);
     return;
   }
-  const doesUserHaveURL = urlsForUser(req.cookies['user_id']);
+  const doesUserHaveURL = urlsForUser(req.session.user_id);
   if (!doesUserHaveURL[req.params.id]) {
     res.send("URL can only be deleted by the original user", 403);
     return;
@@ -98,7 +102,7 @@ app.post("/urls/:id/delete", (req, res) => {
 });
 
 app.post("/urls/:id/edit", (req, res) => {
-  if (!req.cookies['user_id']) {
+  if (!req.session.user_id) {
     res.send("You cannot modify URL's when not logged in", 401);
     return;
   }
@@ -106,7 +110,7 @@ app.post("/urls/:id/edit", (req, res) => {
     res.send("That URL is not in our database, please check and try again", 404);
     return;
   }
-  const doesUserHaveURL = urlsForUser(req.cookies['user_id']);
+  const doesUserHaveURL = urlsForUser(req.session.user_id);
   if (!doesUserHaveURL[req.params.id]) {
     res.send("URL can only be modified by the original user", 403);
     return;
@@ -125,12 +129,12 @@ app.post("/login", (req, res) =>{
     res.status(403).end('Email not found in database or password does not match');
     return;
   }
-  res.cookie('user_id', confirmRegistered.id);
+  req.session.user_id = confirmRegistered.id
   res.redirect("/urls");
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie('user_id');
+  req.session = null;
   res.redirect("/login");
 });
 
@@ -146,15 +150,15 @@ app.post("/register", (req, res) => {
     email: req.body.email,
     password: bcrypt.hashSync(req.body.password, 10) //hashes password so is not stored on server in plain text
   };
-  res.cookie('user_id', newId);
+  req.session.user_id = newId;
   res.redirect("/urls");
 });
 
 app.get("/login", (req, res) => {
   const templateVars = {
-    user: users[req.cookies["user_id"]]
+    user: users[req.session.user_id]
   };
-  if (req.cookies["user_id"]) {
+  if (req.session.user_id) {
     res.redirect("/urls");
     return;
   }
@@ -162,22 +166,22 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  if (!req.cookies['user_id']) {
+  if (!req.session.user_id) {
     res.send("There are no URL's to show as no user is logged in, please login at try again", 401);
     return;
   }
   const templateVars = {
-    urls: urlsForUser(req.cookies['user_id']),
-    user: users[req.cookies["user_id"]]
+    urls: urlsForUser(req.session.user_id),
+    user: users[req.session.user_id]
   };
   res.render("urls_index", templateVars);
 });
 
 app.get("/register", (req, res) => {
   const templateVars = {
-    user: users[req.cookies["user_id"]]
+    user: users[req.session.user_id]
   };
-  if (req.cookies["user_id"]) {
+  if (req.session.user_id) {
     res.redirect("/urls");
     return;
   }
@@ -186,9 +190,9 @@ app.get("/register", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   const templateVars = {
-    user: users[req.cookies["user_id"]]
+    user: users[req.session.user_id]
   };
-  if (!req.cookies['user_id']) {
+  if (!req.session.user_id) {
     res.redirect("/login");
     return;
   }
@@ -196,11 +200,11 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
-  if (!req.cookies['user_id']) {
+  if (!req.session.user_id) {
     res.send("There are no URL's to show as no user is logged in, please login at try again", 401);
     return;
   }
-  const doesUserHaveURL = urlsForUser(req.cookies['user_id']);
+  const doesUserHaveURL = urlsForUser(req.session.user_id);
   if (!doesUserHaveURL[req.params.id]) {
     res.send("URL can only be modified by the original user", 403);
     return;
@@ -208,7 +212,7 @@ app.get("/urls/:id", (req, res) => {
   const templateVars = {
     id: req.params.id,
     longURL: urlDatabase[req.params.id].longURL,
-    user: users[req.cookies["user_id"]]
+    user: users[req.session.user_id]
   };
   res.render("urls_show", templateVars);
 });
