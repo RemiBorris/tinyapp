@@ -23,10 +23,25 @@ const urlsForUser = function(id, database) {
   return userUrls;
 };
 
+const siteVisits = function(shortURL, urlDatabase) {
+  const URLVisits = {timestamps:{}, unique: 0, total: 0};
+  for (const user in urlDatabase[shortURL].visits) {
+    URLVisits.timestamps[user] = urlDatabase[shortURL].visits[user];
+  }
+  for (const user in URLVisits.timestamps) {
+    URLVisits.timestamps[user].forEach(() => {
+      URLVisits.total += 1;
+    });
+    URLVisits.unique += 1;
+  }
+  return URLVisits;
+};
+
 const helperFunctions = {
   generateRandomString,
   userLookup,
   urlsForUser,
+  siteVisits,
 };
 
 module.exports = helperFunctions;

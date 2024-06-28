@@ -3,7 +3,7 @@ const app = express();
 const PORT = 8080;
 const cookieSession = require('cookie-session');
 const bcrypt = require("bcryptjs");
-const { userLookup, generateRandomString, urlsForUser } = require("./helpers");
+const { userLookup, generateRandomString, urlsForUser, siteVisits } = require("./helpers");
 const methodOverride = require('method-override');
 
 
@@ -13,18 +13,31 @@ const urlDatabase = {
   b6UTxQ: {
     longURL: "https://www.tsn.ca",
     userID: "aJ48lW",
+    visits: {
+      A1B2C3: ['Thu Jun 27 2024 21:02:50 GMT-0300 (Atlantic Daylight Time)']
+    }
   },
   i3BoGr: {
     longURL: "https://www.google.ca",
     userID: "aJ48lW",
+    visits: {
+      A1B2C3: ['Thu Jun 27 2024 21:02:57 GMT-0300 (Atlantic Daylight Time)']
+    }
   },
   b2xVn2: {
     longURL: "http://www.lighthouselabs.ca",
     userID: "A1B2C3",
+    visits: {
+      A1B2C3: ['Thu Jun 27 2024 21:02:53 GMT-0300 (Atlantic Daylight Time)']
+    }
   },
   "9sm5xK": {
     longURL: "http://www.google.com",
     userID: "A1B2C3",
+    visits: {
+      A1B2C3: ['Thu Jun 27 2024 21:02:42 GMT-0300 (Atlantic Daylight Time)', 'Wed Jun 26 2024 12:30:40 GMT-0300 (Atlantic Daylight Time)'],
+      aJ48lW: ['Wed Jun 26 2024 12:30:40 GMT-0300 (Atlantic Daylight Time)']
+    }
   },
 };
 
@@ -57,6 +70,7 @@ app.post("/urls", (req, res) => {
   urlDatabase[newShortURL] = {
     longURL: req.body.longURL,
     userID: req.session.user_id,
+    visits: {},
   };
   res.redirect(`/urls/${newShortURL}`);
 });
@@ -97,17 +111,13 @@ app.put("/urls/:id", (req, res) => {
   res.redirect("/urls");
 });
 
-app.post("/urls/:id/edit", (req, res) => {
-  res.redirect(`/urls/${req.params.id}`);
-});
-
 app.post("/login", (req, res) =>{
   const confirmRegistered = userLookup(req.body.email, users);
   if (confirmRegistered === null || !bcrypt.compareSync(req.body.password, confirmRegistered.password)) { //verifies if hashed passwords match and user exists
     res.status(403).end('Email not found in database or password does not match');
     return;
   }
-  req.session.user_id = confirmRegistered.id
+  req.session.user_id = confirmRegistered.id;
   res.redirect("/urls");
 });
 
@@ -191,10 +201,12 @@ app.get("/urls/:id", (req, res) => {
     res.send("URL can only be modified by the original user", 403);
     return;
   }
+  const URLVisits = siteVisits(req.params.id, urlDatabase);
   const templateVars = {
     id: req.params.id,
     longURL: urlDatabase[req.params.id].longURL,
-    user: users[req.session.user_id]
+    user: users[req.session.user_id],
+    URLVisits,
   };
   res.render("urls_show", templateVars);
 });
@@ -203,6 +215,15 @@ app.get("/u/:id", (req, res) => {
   if (!urlDatabase[req.params.id]) {
     res.send("That URL is not in our database, please check and try again", 404);
     return;
+  }
+  if (req.session.user_id) {
+    if (urlDatabase[req.params.id].visits[req.session.user_id]) {
+      urlDatabase[req.params.id].visits[req.session.user_id].push(Date.now());
+    } else {
+      urlDatabase[req.params.id].visits[req.session.user_id] = [Date.now()];
+    }
+  } else {
+    urlDatabase[req.params.id].visits[generateRandomString()] = [Date.now()];
   }
   const longURL = urlDatabase[req.params.id].longURL;
   res.redirect(longURL);
@@ -218,10 +239,6 @@ app.get("/", (req, res) => {
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
-});
-
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
 app.listen(PORT, () => {
