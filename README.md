@@ -6,7 +6,7 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 !["View of Login page"](https://github.com/RemiBorris/tinyapp/blob/master/docs/login-page.png?raw=true)
 !["Example of urls landing page"](https://github.com/RemiBorris/tinyapp/blob/master/docs/urls-page.png?raw=true)
-!["Example of edit page"](https://github.com/RemiBorris/tinyapp/blob/master/docs/edit-page.png?raw=true)
+!["Example of edit page"](https://github.com/RemiBorris/tinyapp/blob/master/docs/edit-page-stretch.png?raw=true)
 
 ## Dependencies
 
