@@ -75,7 +75,7 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${newShortURL}`);
 });
 
-app.delete("/urls/:id", (req, res) => {
+app.delete("/urls/:id", (req, res) => { //delete a URL from our database
   if (!req.session.user_id) {
     res.send("You cannot delete URL's when not logged in", 401);
     return;
@@ -93,7 +93,7 @@ app.delete("/urls/:id", (req, res) => {
   res.redirect("/urls");
 });
 
-app.put("/urls/:id", (req, res) => {
+app.put("/urls/:id", (req, res) => { //update long URL from our database keeping the same shortURL
   if (!req.session.user_id) {
     res.send("You cannot modify URL's when not logged in", 401);
     return;
@@ -111,7 +111,7 @@ app.put("/urls/:id", (req, res) => {
   res.redirect("/urls");
 });
 
-app.post("/login", (req, res) =>{
+app.post("/login", (req, res) =>{ //checks useranme and hashed passwords then sets encrypted cookies and redirects to /urls
   const confirmRegistered = userLookup(req.body.email, users);
   if (confirmRegistered === null || !bcrypt.compareSync(req.body.password, confirmRegistered.password)) { //verifies if hashed passwords match and user exists
     res.status(403).end('Email not found in database or password does not match');
@@ -121,12 +121,12 @@ app.post("/login", (req, res) =>{
   res.redirect("/urls");
 });
 
-app.post("/logout", (req, res) => {
+app.post("/logout", (req, res) => { //clears cookies and redirects to login page
   req.session = null;
   res.redirect("/login");
 });
 
-app.post("/register", (req, res) => {
+app.post("/register", (req, res) => { //register username in database, encrypt and set cookies, hash password and redirect to /urls
   const newId = generateRandomString();
   const verifyNotAlreadyRegistered = userLookup(req.body.email, users);
   if (verifyNotAlreadyRegistered || !req.body.email || !req.body.password) {
@@ -142,7 +142,7 @@ app.post("/register", (req, res) => {
   res.redirect("/urls");
 });
 
-app.get("/login", (req, res) => {
+app.get("/login", (req, res) => { //send to Login page if not logged in else redirect to /urls
   const templateVars = {
     user: users[req.session.user_id]
   };
@@ -165,7 +165,7 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
-app.get("/register", (req, res) => {
+app.get("/register", (req, res) => { //send to register page if not logged in else redirect to /urls
   const templateVars = {
     user: users[req.session.user_id]
   };
@@ -176,7 +176,7 @@ app.get("/register", (req, res) => {
   res.render("register", templateVars);
 });
 
-app.get("/urls/new", (req, res) => {
+app.get("/urls/new", (req, res) => { //send to urls/new page if  logged in else redirect to /login
   const templateVars = {
     user: users[req.session.user_id]
   };
@@ -187,7 +187,7 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars);
 });
 
-app.get("/urls/:id", (req, res) => {
+app.get("/urls/:id", (req, res) => { //send to edit page of shortURL if logged in and the owner of shortURL else get descriptive error message
   if (!req.session.user_id) {
     res.send("There are no URL's to show as no user is logged in, please login at try again", 401);
     return;
@@ -211,7 +211,7 @@ app.get("/urls/:id", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-app.get("/u/:id", (req, res) => {
+app.get("/u/:id", (req, res) => { //visit the longURL from the shortURL created, updated database with visit details
   if (!urlDatabase[req.params.id]) {
     res.send("That URL is not in our database, please check and try again", 404);
     return;
@@ -229,16 +229,12 @@ app.get("/u/:id", (req, res) => {
   res.redirect(longURL);
 });
 
-app.get("/", (req, res) => {
+app.get("/", (req, res) => { //send to /login if not logged in else send to /urls
   if (req.session.user_id) {
     return res.redirect("/urls");
   } else {
     return res.redirect("/login");
   }
-});
-
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
 });
 
 app.listen(PORT, () => {
